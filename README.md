@@ -7,7 +7,7 @@ The `scripts` folder contains the following scripts:
 
 The above scripts are used to calculate the variable `est_sale_pr_sqft`. The final sale price estimates are calculated simply by multiplying `est_sale_pr_sqft` by `bldgarea`. 
 
-
+- Link to NYC land use data (at tax lot level): https://www1.nyc.gov/assets/planning/download/zip/data-maps/open-data/nyc_pluto_21v4_csv.zip
 - Link to NYC sales data: https://data.cityofnewyork.us/dataset/NYC-Citywide-Rolling-Calendar-Sales/usep-8jbt
 - Links to Property Shark pages:
     - https://www.propertyshark.com/mason/market-trends/residential/nyc/ + borough name
