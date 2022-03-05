@@ -1,14 +1,15 @@
 library(rvest)
 library(tidyverse)
 
-##### Scrape price of residential buildings #####
+##### Scrape property trend prices #####
 
 boroughs <- c("manhattan", "brooklyn", "bronx", "queens", "staten island")
 
 urls <- vector("character", length(boroughs))
 
-# Get price estimates from real estate website propertyshark.com
-# for each building category
+#### Residential properties #####
+
+# Links to residential properties price estimates for each borough
 for(i in 1:length(boroughs)){
   urls[i] <- paste0("https://www.propertyshark.com/mason/market-trends/residential/nyc/", boroughs[i])
 }
@@ -23,9 +24,12 @@ for(i in seq_len(length(pages$page))) {
   
 }
 
+# Clean scraping output
 for(i in 1:length(out)) {
   names(out[[i]][[1]][[1]]) <- out[[i]][[1]][[1]][1, ]
+  
   out[[i]][[1]][[1]] <- out[[i]][[1]][[1]][-1, ]
+  
   out[[i]][[1]][[1]][, "borough"] <- boroughs[i]
 }
 
@@ -34,7 +38,8 @@ resid_prices <- bind_rows(out[[1]][[1]][[1]], out[[2]][[1]][[1]],
           out[[3]][[1]][[1]], out[[4]][[1]][[1]],
           out[[5]][[1]][[1]])
 
-# Scrape residential prices separately because of different HTML tag
+# Scrape residential prices
+# Done separately because of unique target HTML tag
 resid_prices <- resid_prices %>% 
   select(borough, `Property Type`, `Median sale price/sqft`) %>% 
   rename(
@@ -54,15 +59,15 @@ resid_prices <- resid_prices %>%
                          "QN" = "queens",
                          "SI" = "staten island"))
 
-########################################################
+#### Other property categories ####
 
-# Scrape prices for the other building categories 
-# commercial, multifamily, retail, office, industrial
+# Scrape price estimate from specific HTML element for each url
 scrape_info <- function(urls, boroughs) {
   pages <- tibble(page = map(urls, read_html))
   
   out <- list()
   for(i in seq_len(length(pages$page))) {
+    # Create list with scraping output and borough name (for reference)
     out[[i]] <- list(boroughs[i], c(pages[[1]][[i]] %>% 
                                       html_nodes(".comm_middle_hexagon_table , .top_hexagon_table") %>% 
                                       html_text()))
@@ -74,6 +79,7 @@ scrape_info <- function(urls, boroughs) {
 bldgclass <- c("commercial", "multifamily", "retail", 
                "office","industrial")
 
+# Create link for each building categories
 urls_comm       <- vector("character", length(boroughs))
 urls_multifam   <- vector("character", length(boroughs))
 urls_retail     <- vector("character", length(boroughs))
@@ -91,12 +97,14 @@ for(i in 1:length(boroughs)){
 urls <- list(urls_comm, urls_multifam, urls_retail, 
              urls_office, urls_industrial)
 
+# Scrape HTML element
 out_comm        <- scrape_info(urls[[1]], boroughs)
 out_multifam    <- scrape_info(urls[[2]], boroughs)
 out_retail      <- scrape_info(urls[[3]], boroughs)
 out_office      <- scrape_info(urls[[4]], boroughs)
 out_industrial  <- scrape_info(urls[[5]], boroughs)
 
+# Collect scraped elements into a dataframe
 my_bind <- function(out) {
   c(out[[1]][[1]], out[[1]][[2]], 
     out[[2]][[1]], out[[2]][[2]],
@@ -105,6 +113,7 @@ my_bind <- function(out) {
     out[[5]][[1]], out[[5]][[2]])
 }
 
+# Create vectors with scraping output and respective building class
 out_comm        <- c(bldgclass[1], my_bind(out_comm))
 out_multifam    <- c(bldgclass[2], my_bind(out_multifam))
 out_retail      <- c(bldgclass[3], my_bind(out_retail))
@@ -113,13 +122,10 @@ out_industrial  <- c(bldgclass[5], my_bind(out_industrial))
 
 out <- c(out_comm, out_multifam, out_retail, out_office, out_industrial)
 
-which(out == "Average price/sqft")
+# Create prices variable
 prices <- out[which(out == "Average price/sqft") + 1]
 
-which(out %in% boroughs)
-which(out %in% bldgclass)
-
-
+# Repeat building class strings to match dataframe rows
 bclass_rep <- list()
 for(i in 1:length(bldgclass)) {
   bclass_rep[[i]] <- rep(bldgclass[i], 5)
@@ -157,7 +163,7 @@ summary_rolling_sales_ny <- rolling_sales_ny %>%
   ) %>% 
   ungroup()
 
-# Replace scraped estimates with sales data estimates
+# Replace scraped estimates with sales data estimates (if available for given building category)
 df <- full_join(summary_rolling_sales_ny, price_by_class) %>% 
   na.omit() %>% 
   group_by(borough, bldgclass) %>% 
@@ -172,13 +178,3 @@ price_by_class <- df %>% select(-count)
 
 rm(list=ls()[which(!(ls() %in% c("price_by_class", "ny_housing", 
                                  "ny_housing_sub", "rolling_sales_ny")))])
-
-
-
-
-
-
-
-
-
-
