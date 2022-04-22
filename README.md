@@ -1,4 +1,4 @@
-# nyc_re_data
+# New York City - Real Estate Data
 The scripts collect and clean data from various sources to create a dataset with sale price estimates for over 700 thousand properties in New York City. 
 
 The `scripts` folder contains the following scripts:
